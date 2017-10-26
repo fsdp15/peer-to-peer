@@ -1,0 +1,41 @@
+﻿Nomes: Felipe dos Santos Dotti do Prado e Diego Graciano Roessle
+GRRs: 20151127 e 20148190
+
+Trabalho Prático de Redes de Computadores II - Eleição de Líder entre Peers TCP
+
+	Esse relatório visa demonstrar o funcionamento e planejamento do trabalho prático da disciplina de Redes de Computadores II.
+
+	Inicialmente foi decidido que a linguagem de programação utilizada seria Python, devido à sua praticidade e eficiência. Além disso, decidimos os seguintes assuntos antes de começar a implementação:
+
+	- O número de peers é definido antes de realizar a conexão entre os peers, sendo que todos os peers possuem o mesmo arquivo .txt que possui uma lista de peers, contendo: o ID de cada peer, seu IP  e a porta utilizada para conexão;
+	- O líder sempre é o peer que está em primeiro na lista de peers;
+	- Há uma classe Mensagem, que define o padrão das mensagens enviadas entre os peers. Em uma mensagem os seguintes campos são necessários: tipo da mensagem, ID do peer de de origem e ID do peer de destino;
+	- Há uma estrutura de dados Heartbeat, que é atualizada cada vez que o peer recebe uma mensagem de heartbeat. Ela possui os campos ID, Lider (quem é o líder atual) e last_heartbeat (tempo em que foi recebido o último heartbeat);
+	- Cada peer possui uma tabela de heartbeats que contém uma estrutura de dados Heartbeat para cada peer ao qual ele está conectado;
+	- Uma mensagem pode ter dois tipos: heartbeat e urgente (usado para a troca de líder);
+	- A cada 2 segundos, os peers enviam um heartbeat para os outros. Cada peer possui uma tabela de heartbeats para verificar o estado dos outros peers. Se o tempo que ele não recebe um heartbeat de outro peer for maior do que 3 segundos, esse peer é considerado como inválido;
+	- Se o líder virar um peer inválido, o primeiro a detectar isso envia uma mensagem urgente para todos avisando a troca de líder. O novo líder é o ID seguinte ao do líder na lista de peers;
+	- A biblioteca de multithreading do Python seria utilizada para a conexão entre os peers.
+
+	A execução do programa segue o seguinte esquema: assim que é executado em uma máquina, o programa lê a lista de hosts (hosts.txt) para encontrar o IDpeer definido para o endereço IP em que está rodando e a porta que será utilizada nos sockets. Após isso, é criada uma thread para executar um socket de escuta, que irá receber as requisições de conexão, e outra thread para requsitar conexão a todos os outros hosts da lista. A thread de escuta cria uma nova thread para cada requisição de conexão aceita, com um novo socket (que chamaremos de socket servidor). Esta nova thread é usada para receber as mensagens do peer que fteve sua requisição de conexão aceita.
+
+	Para emparelhar com os outros hosts da lista, o peer percorre a lista de hosts e tenta criar um socket que solicita conexão para cada um dos hosts. Se der certo e a solicitação for aceita, coloca esse novo socket em uma lista de sockets e cria uma nova thread (handerCliente), que usará esse socket para enviar mensagens ao peer com o qual se conectou. Chamaremos esses sockets de sockets cliente.
+
+	Após estar conectado com todos os outros peers, o programa então usa os sockets cliente para enviar, a cada 2 segundos, uma mensagem do tipo heartbeat para todos os outros peers. Ao mesmo tempo, ele recebe mensagens dos outros peers através dos sockets servidor. Se receber uma mensagem do tipo heartbeat, ele atualiza a tabela de heartbeats. Se receber uma mensagem do tipo urgente, significa que o líder caiu e é feita a troca de líder, que agora será o peer seguinte ao antigo líder na lista de hosts.
+
+	A cada 3 segundos, uma outra thread percorre a tabela de heartbeats do peer. Para cada entrada, calcula a diferença entre o tempo atual e o tempo marcado na entrada (que é o tempo em que foi recebido o último heartbeat de tal peer). Se for maior que 3 segundos, pode seguir dois caminhos:
+
+	- Se o peer da entrada na tabela era líder: deleta o peer da tabela de heartbeats, deleta o peer da lista de sockets cliente, deleta o peer da lista de hosts, manda mensagem de tipo urgente para todos (usando a lista de sockets cliente) e convoca novas eleições;
+
+	- Se o peer da entrada na tabela não era líder:  deleta o peer da tabela de heartbeats, deleta o peer da lista de sockets cliente e deleta o peer da lista de hosts.
+
+	Dificuldades encontradas:
+
+	- Abertura de conexão em multithreading entre todos os peers;
+	- Manter todos os peers funcionando quando um peer se desconectar;
+	- Enviar uma mensagem para todos os peers;
+	- “Empacotar” uma mensagem que possui três campos em uma string e depois “desempacotar” essa string.
+
+
+
+	
